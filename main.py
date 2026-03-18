@@ -34,8 +34,6 @@ class CardEngine:
             CardNode.get_card_nodes(file_path) if file_path != None else None
         )
 
-        self.study_set()
-
     @staticmethod
     def get_file_path() -> str | None:
         if len(argv) <= 1:
@@ -81,4 +79,6 @@ class CardEngine:
             print(node)
 
 
-a = CardEngine()
+if __name__ == "__main__":
+    card_engine = CardEngine()
+    card_engine.study_set()
