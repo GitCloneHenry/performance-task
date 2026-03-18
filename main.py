@@ -6,6 +6,7 @@ import json
 import os
 
 
+
 class CardNode:
     def __init__(self, a_side: str, b_side: str):
         self.a_side = a_side
@@ -48,7 +49,10 @@ class CardEngine:
             for iteration, file_name in enumerate(available_sets):
                 file = open(f".\\sets\\{file_name}", "r")
 
-                file_data = json.load(file)
+                file_data: Dict[str, str] = json.load(file)
+
+                if not "set_title" in file_data.keys():
+                    file_data["set_title"] = "Invalid Set"
 
                 print(f"    {iteration + 1}: {file_data["set_title"]}")
 
