@@ -6,6 +6,16 @@ import json
 import os
 
 
+class EngineConstants:
+    MINIMUM_ACCURACY: float = 0.9
+
+    MINIMUM_POINTS_AWARDED: float = 50.0
+    MAXIMUM_POINTS_AWARDED: float = 100.0
+
+    MINIMUM_POINTS_DEDUCTED: float = -100.0
+    MAXIMUM_POINTS_DEDUCTED: float = -0.0
+
+
 class CardNode:
     def __init__(self, a_side: str, b_side: str):
         self.a_side = a_side
@@ -90,7 +100,7 @@ class CardEngine:
                     print(f"Invalid selection, try again.")
                 except ValueError:
                     print("Please enter a number.")
-        elif os.path.isfile(argv[1]):
+        elif CardEngine.is_valid_file(argv[1]):
             return str(argv[1])
         else:
             argv.pop(1)
@@ -98,8 +108,53 @@ class CardEngine:
 
     @staticmethod
     def compare_similarity(a: str, b: str) -> float:
-        set_a, set_b = set(a), set(b)
-        return len(set_a.intersection(set_b)) / len(set_a.union(set_b))
+        s1 = a.strip().lower()
+        s2 = b.strip().lower()
+
+        if not s1 or not s2:
+            return 0.0
+        if s1 == s2:
+            return 1.0
+
+        rows = len(s1) + 1
+        cols = len(s2) + 1
+        dist = [[0 for _ in range(cols)] for _ in range(rows)]
+
+        for i in range(1, rows):
+            dist[i][0] = i
+        for i in range(1, cols):
+            dist[0][i] = i
+
+        for col in range(1, cols):
+            for row in range(1, rows):
+                cost = 0 if s1[row - 1] == s2[col - 1] else 1
+                dist[row][col] = min(
+                    dist[row - 1][col] + 1,
+                    dist[row][col - 1] + 1,
+                    dist[row - 1][col - 1] + cost,
+                )
+
+        return 1.0 - (dist[rows - 1][cols - 1] / max(len(s1), len(s2)))
+
+    @staticmethod
+    def calculate_points_from_similarity(similarity: float):
+        if similarity >= EngineConstants.MINIMUM_ACCURACY:
+            return EngineConstants.MINIMUM_POINTS_AWARDED + (
+                EngineConstants.MAXIMUM_POINTS_AWARDED
+                - EngineConstants.MINIMUM_POINTS_AWARDED
+            ) * (
+                (similarity - EngineConstants.MINIMUM_ACCURACY)
+                / (1.0 - EngineConstants.MINIMUM_ACCURACY)
+            )
+        else:
+            return (
+                EngineConstants.MINIMUM_POINTS_DEDUCTED
+                + (
+                    EngineConstants.MAXIMUM_POINTS_DEDUCTED
+                    - EngineConstants.MINIMUM_POINTS_DEDUCTED
+                )
+                * similarity
+            )
 
     def study_set(self) -> None:
         if not self.card_nodes:
@@ -111,7 +166,9 @@ class CardEngine:
             node = nodes_to_study.pop(randint(0, len(nodes_to_study) - 1))
             print(node.a_side)
             response = CardEngine.get_input()
-            print(self.compare_similarity(node.b_side, response))
+            similarity = self.compare_similarity(node.b_side, response)
+            points = CardEngine.calculate_points_from_similarity(similarity)
+            print(points)
 
 
 if __name__ == "__main__":
