@@ -43,6 +43,7 @@ class CardEngine:
         self.card_nodes: List[CardNode] | None = (
             CardNode.get_card_nodes(file_path) if file_path != None else None
         )
+        self.total_points: float = 0.0
 
     @staticmethod
     def get_input(prefix: str = "") -> str:
@@ -108,8 +109,8 @@ class CardEngine:
 
     @staticmethod
     def compare_similarity(a: str, b: str) -> float:
-        s1 = a.strip().lower()
-        s2 = b.strip().lower()
+        s1 = "".join(filter(str.isalpha, a.strip().lower()))
+        s2 = "".join(filter(str.isalpha, b.strip().lower()))
 
         if not s1 or not s2:
             return 0.0
@@ -162,14 +163,33 @@ class CardEngine:
 
         nodes_to_study: List[CardNode] = list(self.card_nodes)
 
+        perfect_point_count = len(nodes_to_study) * EngineConstants.MAXIMUM_POINTS_AWARDED
+
         while len(nodes_to_study) > 0:
             node = nodes_to_study.pop(randint(0, len(nodes_to_study) - 1))
-            print(node.a_side)
+            print(f"\033[1m{node.a_side}\033[0m")
             response = CardEngine.get_input()
+            
             similarity = self.compare_similarity(node.b_side, response)
             points = CardEngine.calculate_points_from_similarity(similarity)
-            print(points)
 
+            if points == EngineConstants.MAXIMUM_POINTS_AWARDED:
+                print(f"\033[32mCORRECT\033[0m\nYou got \033[1m{int(points)}\033[0m points!")
+            elif points > 0:
+                print(f"\033[33mCLOSE\033[0m\nYou got \033[1m{int(points)}\033[0m points.\nThe correct answer is \"{node.b_side}\"")
+            else:
+                print(f"\033[31mWRONG\033[0m\nYou lost \033[1m{abs(int(points))}\033[0m points!\nThe correct answer is \"{node.b_side}\"")
+            
+            self.total_points += points
+
+            print()
+        
+        if self.total_points == perfect_point_count:
+            print(f"\033[1mYou finished with {self.total_points} points!\033[0m\n\033[32mPERFECT\033[0m")
+        elif self.total_points > 0:
+            print(f"\033[1mYou finished with {self.total_points} points.\033[0m\n\033[33mNICE JOB\033[0m")
+        else:
+            print(f"\033[1mYou finished with {self.total_points} points!\033[0m\n\033[31mUH OH!\033[0m")
 
 if __name__ == "__main__":
     card_engine = CardEngine()
